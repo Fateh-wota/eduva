@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>EDUVA — Dashboard</title>
-  <link href="https://fonts.bunny.net/css?family=syne:400,600,700,800|dm-sans:300,400,500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -418,7 +418,10 @@
     const user = session.user
 
     // Ambil profil
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single()
+    const { data: profile, error: profileError } = await sb.from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle()
 
     // Ambil semua assessment user ini
     const { data: assessments } = await sb.from('assessments')
@@ -426,10 +429,15 @@
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
-    // Tampilkan data
+    // Nama: ambil dari profil, fallback ke bagian depan email
     const nama = profile?.nama || user.email.split('@')[0]
-    document.getElementById('nav-nama').textContent = nama
-    document.getElementById('welcome-nama').textContent = nama
+    // Nickname: ambil kata pertama saja
+    const nickname = nama.split(' ')[0]
+
+    document.getElementById('nav-nama').textContent = nickname
+    document.getElementById('welcome-nama').textContent = nickname
+
+    // Profil
     document.getElementById('p-nama').textContent = profile?.nama || '—'
     document.getElementById('p-jurusan').textContent = profile?.jurusan || '—'
     document.getElementById('p-kelas').textContent = profile?.kelas ? `Kelas ${profile.kelas}` : '—'
@@ -453,14 +461,11 @@
 
       const skillList = document.getElementById('skill-list')
       skillList.innerHTML = ''
-
-      // Tampilkan semua kategori yang ada, plus yang belum ada dengan 0
       const allKat = ['Jaringan', 'Coding', 'Desain']
       allKat.forEach(kat => {
         const scores = byKat[kat] || []
         const avg = scores.length > 0 ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0
         const color = SKILL_COLORS[kat]?.cls || 'fill-blue'
-
         skillList.innerHTML += `
           <div class="skill-item">
             <div class="skill-info">
