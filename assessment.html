@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EDUVA — Assessment Skill</title>
+  <link href="https://fonts.bunny.net/css?family=syne:400,600,700,800|dm-sans:300,400,500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --border: #1e2d45;
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --text: #f0f4ff;
+      --muted: #64748b;
+      --success: #10b981;
+      --error: #ef4444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px; left: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 36px;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+    /* Progress bar */
+    .progress-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+    .kategori-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 99px;
+      background: rgba(59,130,246,0.15);
+      color: var(--accent2);
+      border: 1px solid rgba(59,130,246,0.25);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    /* Question card */
+    .question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.3s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .question-num {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .question-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    /* Options */
+    .options { display: flex; flex-direction: column; gap: 12px; }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .option:hover { border-color: var(--accent); background: rgba(59,130,246,0.05); }
+    .option.selected { border-color: var(--accent); background: rgba(59,130,246,0.1); }
+    .option.correct  { border-color: var(--success); background: rgba(16,185,129,0.1); }
+    .option.wrong    { border-color: var(--error);   background: rgba(239,68,68,0.1); }
+    .option-key {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .option.selected .option-key { background: var(--accent); color: #fff; }
+    .option.correct  .option-key { background: var(--success); color: #fff; }
+    .option.wrong    .option-key { background: var(--error);   color: #fff; }
+    .option-text { font-size: 15px; line-height: 1.4; }
+
+    /* Nav buttons */
+    .nav {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .btn {
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-next {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .btn-next:hover { opacity: 0.9; }
+    .btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Result screen */
+    #result-screen {
+      display: none;
+      text-align: center;
+      animation: fadeUp 0.4s ease both;
+    }
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+    }
+    .result-icon {
+      font-size: 56px;
+      margin-bottom: 20px;
+    }
+    .result-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .result-sub {
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+    .score-ring {
+      width: 140px; height: 140px;
+      border-radius: 50%;
+      background: conic-gradient(var(--accent) var(--pct), var(--border) 0);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 32px;
+      position: relative;
+    }
+    .score-ring::before {
+      content: '';
+      position: absolute;
+      width: 110px; height: 110px;
+      background: var(--surface);
+      border-radius: 50%;
+    }
+    .score-num {
+      position: relative;
+      z-index: 1;
+      font-family: 'Syne', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+    }
+    .breakdown {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .breakdown-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .breakdown-item .val {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .breakdown-item .lbl {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .val.green { color: var(--success); }
+    .val.red   { color: var(--error); }
+    .val.blue  { color: var(--accent2); }
+
+    .rekomendasi {
+      background: rgba(59,130,246,0.07);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 14px;
+      padding: 20px 24px;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+    .rekomendasi h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--accent2);
+    }
+    .rekomendasi ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .rekomendasi li {
+      font-size: 14px;
+      color: var(--text);
+      padding-left: 18px;
+      position: relative;
+    }
+    .rekomendasi li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    .btn-dashboard {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      padding: 14px 36px;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-dashboard:hover { opacity: 0.9; }
+
+    /* Loading */
+    #loading {
+      text-align: center;
+      padding: 80px 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">EDUVA</div>
+    <button class="btn-logout" onclick="logout()">Keluar</button>
+  </div>
+
+  <div id="loading">Memuat soal...</div>
+
+  <!-- Assessment screen -->
+  <div id="assessment-screen" style="display:none">
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="progress-label">Soal 1 dari 10</span>
+        <span id="kategori-label"></span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:10%"></div>
+      </div>
+    </div>
+
+    <div class="question-card" id="question-card">
+      <div class="kategori-badge" id="q-kategori"></div>
+      <div class="question-num" id="q-num"></div>
+      <div class="question-text" id="q-text"></div>
+      <div class="options" id="q-options"></div>
+    </div>
+
+    <div class="nav">
+      <button class="btn btn-next" id="btn-next" disabled onclick="nextQuestion()">
+        Lanjut →
+      </button>
+    </div>
+  </div>
+
+  <!-- Result screen -->
+  <div id="result-screen">
+    <div class="result-card">
+      <div class="result-icon" id="result-icon">🎯</div>
+      <div class="result-title" id="result-title">Assessment Selesai!</div>
+      <div class="result-sub" id="result-sub">Berikut hasil analisis skill kamu</div>
+
+      <div class="score-ring" id="score-ring" style="--pct: 0deg">
+        <div class="score-num" id="score-num">0</div>
+      </div>
+
+      <div class="breakdown">
+        <div class="breakdown-item">
+          <div class="val green" id="res-benar">0</div>
+          <div class="lbl">Benar</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="val red" id="res-salah">0</div>
+          <div class="lbl">Salah</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="val blue" id="res-skor">0</div>
+          <div class="lbl">Skor</div>
+        </div>
+      </div>
+
+      <div class="rekomendasi">
+        <h3>Rekomendasi Belajar</h3>
+        <ul id="rekomendasi-list"></ul>
+      </div>
+
+      <button class="btn-dashboard" onclick="window.location.href='dashboard.html'">
+        Lihat Dashboard →
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://gcathmmlblokgdikxncj.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_bZh2Iw1WKBjwkdsUjt31Bg_MF5anpOP'
+  const { createClient } = supabase
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+  // Bank soal (nanti bisa dipindah ke database Supabase)
+  const SOAL = [
+    {
+      kategori: 'Jaringan',
+      soal: 'Apa kepanjangan dari IP dalam jaringan komputer?',
+      opsi: ['Internet Protocol', 'Internal Process', 'Input Program', 'Interface Port'],
+      jawaban: 0
+    },
+    {
+      kategori: 'Jaringan',
+      soal: 'Perangkat yang berfungsi menghubungkan dua jaringan berbeda disebut?',
+      opsi: ['Switch', 'Hub', 'Router', 'Repeater'],
+      jawaban: 2
+    },
+    {
+      kategori: 'Coding',
+      soal: 'Di HTML, tag apa yang digunakan untuk membuat judul terbesar?',
+      opsi: ['<h6>', '<h1>', '<title>', '<header>'],
+      jawaban: 1
+    },
+    {
+      kategori: 'Coding',
+      soal: 'Apa fungsi dari CSS dalam pengembangan web?',
+      opsi: ['Mengatur logika program', 'Mengatur tampilan dan gaya halaman', 'Menyimpan data pengguna', 'Menghubungkan ke database'],
+      jawaban: 1
+    },
+    {
+      kategori: 'Coding',
+      soal: 'Tipe data mana yang digunakan untuk menyimpan nilai benar/salah di JavaScript?',
+      opsi: ['String', 'Integer', 'Boolean', 'Float'],
+      jawaban: 2
+    },
+    {
+      kategori: 'Desain',
+      soal: 'Singkatan UI dalam desain produk digital adalah?',
+      opsi: ['Unified Interface', 'User Interface', 'Universal Input', 'Usable Interaction'],
+      jawaban: 1
+    },
+    {
+      kategori: 'Desain',
+      soal: 'Warna yang berlawanan di color wheel disebut warna?',
+      opsi: ['Analogous', 'Triadic', 'Complementary', 'Monochromatic'],
+      jawaban: 2
+    },
+    {
+      kategori: 'Jaringan',
+      soal: 'Port default untuk protokol HTTP adalah?',
+      opsi: ['443', '21', '80', '22'],
+      jawaban: 2
+    },
+    {
+      kategori: 'Coding',
+      soal: 'Dalam pemrograman, fungsi yang memanggil dirinya sendiri disebut?',
+      opsi: ['Looping', 'Rekursif', 'Iterasi', 'Callback'],
+      jawaban: 1
+    },
+    {
+      kategori: 'Jaringan',
+      soal: 'DNS dalam jaringan berfungsi untuk?',
+      opsi: ['Mengamankan koneksi', 'Menerjemahkan nama domain ke IP address', 'Mempercepat internet', 'Memblokir virus'],
+      jawaban: 1
+    }
+  ]
+
+  const REKOMENDASI = {
+    'Jaringan': [
+      'Pelajari materi CCNA dasar di Cisco NetAcad (gratis)',
+      'Coba simulasi jaringan dengan Cisco Packet Tracer',
+      'Baca buku "Jaringan Komputer" oleh Forouzan'
+    ],
+    'Coding': [
+      'Latihan coding harian di freeCodeCamp.org',
+      'Ikuti kursus HTML/CSS/JS di The Odin Project',
+      'Buat project sederhana: landing page atau kalkulator'
+    ],
+    'Desain': [
+      'Pelajari dasar desain di Canva Design School',
+      'Latihan membuat UI di Figma (gratis)',
+      'Ikuti tantangan #dailyui untuk melatih skill desain'
+    ]
+  }
+
+  let current = 0
+  let jawaban = []
+  let selectedOption = null
+  let user = null
+
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) {
+      window.location.href = 'login.html'
+      return
+    }
+    user = session.user
+    document.getElementById('loading').style.display = 'none'
+    document.getElementById('assessment-screen').style.display = 'block'
+    tampilkanSoal()
+  }
+
+  function tampilkanSoal() {
+    const s = SOAL[current]
+    const keys = ['A','B','C','D']
+
+    document.getElementById('q-kategori').textContent = s.kategori
+    document.getElementById('q-num').textContent = `Soal ${current + 1}`
+    document.getElementById('q-text').textContent = s.soal
+    document.getElementById('progress-label').textContent = `Soal ${current+1} dari ${SOAL.length}`
+    document.getElementById('progress-fill').style.width = `${((current+1)/SOAL.length)*100}%`
+
+    const opsiEl = document.getElementById('q-options')
+    opsiEl.innerHTML = ''
+    s.opsi.forEach((o, i) => {
+      const div = document.createElement('div')
+      div.className = 'option'
+      div.innerHTML = `<div class="option-key">${keys[i]}</div><div class="option-text">${o}</div>`
+      div.onclick = () => pilihOpsi(i, div)
+      opsiEl.appendChild(div)
+    })
+
+    selectedOption = null
+    document.getElementById('btn-next').disabled = true
+
+    // Animasi ulang card
+    const card = document.getElementById('question-card')
+    card.style.animation = 'none'
+    card.offsetHeight
+    card.style.animation = ''
+  }
+
+  function pilihOpsi(idx, el) {
+    document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'))
+    el.classList.add('selected')
+    selectedOption = idx
+    document.getElementById('btn-next').disabled = false
+  }
+
+  function nextQuestion() {
+    jawaban.push(selectedOption)
+
+    if (current < SOAL.length - 1) {
+      current++
+      tampilkanSoal()
+    } else {
+      tampilkanHasil()
+    }
+  }
+
+  async function tampilkanHasil() {
+    document.getElementById('assessment-screen').style.display = 'none'
+    document.getElementById('result-screen').style.display = 'block'
+
+    let benar = 0
+    let salahKategori = {}
+
+    SOAL.forEach((s, i) => {
+      if (jawaban[i] === s.jawaban) {
+        benar++
+      } else {
+        salahKategori[s.kategori] = (salahKategori[s.kategori] || 0) + 1
+      }
+    })
+
+    const skor = Math.round((benar / SOAL.length) * 100)
+    const pct = `${skor * 3.6}deg`
+
+    document.getElementById('score-ring').style.setProperty('--pct', pct)
+    document.getElementById('score-num').textContent = skor
+    document.getElementById('res-benar').textContent = benar
+    document.getElementById('res-salah').textContent = SOAL.length - benar
+    document.getElementById('res-skor').textContent = skor
+
+    // Icon & judul berdasarkan skor
+    if (skor >= 80) {
+      document.getElementById('result-icon').textContent = '🏆'
+      document.getElementById('result-title').textContent = 'Luar Biasa!'
+      document.getElementById('result-sub').textContent = 'Skill kamu sudah sangat baik!'
+    } else if (skor >= 60) {
+      document.getElementById('result-icon').textContent = '👍'
+      document.getElementById('result-title').textContent = 'Bagus!'
+      document.getElementById('result-sub').textContent = 'Masih ada ruang untuk berkembang.'
+    } else {
+      document.getElementById('result-icon').textContent = '💪'
+      document.getElementById('result-title').textContent = 'Terus Semangat!'
+      document.getElementById('result-sub').textContent = 'Banyak yang bisa dipelajari!'
+    }
+
+    // Rekomendasi dari kategori yang banyak salah
+    const rekList = document.getElementById('rekomendasi-list')
+    rekList.innerHTML = ''
+    const kategoriLemah = Object.keys(salahKategori).sort((a,b) => salahKategori[b]-salahKategori[a])
+    const shown = kategoriLemah.length > 0 ? kategoriLemah : ['Coding']
+    shown.slice(0,2).forEach(kat => {
+      const reks = REKOMENDASI[kat] || []
+      reks.slice(0,2).forEach(r => {
+        const li = document.createElement('li')
+        li.textContent = r
+        rekList.appendChild(li)
+      })
+    })
+
+    // Simpan ke Supabase
+    const kategoriUtama = Object.keys(salahKategori).sort((a,b)=>salahKategori[b]-salahKategori[a])[0] || 'Umum'
+    await sb.from('assessments').insert({
+      user_id: user.id,
+      skor,
+      kategori: kategoriUtama
+    })
+  }
+
+  async function logout() {
+    await sb.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
