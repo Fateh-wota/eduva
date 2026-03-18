@@ -424,7 +424,7 @@
       .maybeSingle()
 
     // Ambil semua assessment user ini
-    const { data: assessments } = await sb.from('assessments')
+    const { data: assessments } = await sb.from('assessment')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })

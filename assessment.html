@@ -614,7 +614,7 @@
 
     // Simpan ke Supabase
     const kategoriUtama = Object.keys(salahKategori).sort((a,b)=>salahKategori[b]-salahKategori[a])[0] || 'Umum'
-    await sb.from('assessments').insert({
+    await sb.from('assessment').insert({
       user_id: user.id,
       skor,
       kategori: kategoriUtama
