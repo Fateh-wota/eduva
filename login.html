@@ -355,15 +355,18 @@
             const email = document.getElementById('login-email').value
             const pass = document.getElementById('login-pass').value
 
-            const { error } = await sb.auth.signInWithPassword({ email, password: pass })
+            const { data, error } = await sb.auth.signInWithPassword({ email, password: pass })
 
             if (error) {
                 showMsg('msg-login', 'error', 'Email atau password salah.')
                 btn.disabled = false
                 btn.textContent = 'Masuk'
             } else {
+                const { data: prof } = await sb.from('profiles').select('role').eq('id', data.user.id).maybeSingle()
                 showMsg('msg-login', 'success', 'Login berhasil! Mengalihkan...')
-                setTimeout(() => window.location.href = 'dashboard.html', 1200)
+                setTimeout(() => {
+                    window.location.href = prof?.role === 'guru' ? 'dashboard-guru.html' : 'dashboard.html'
+                }, 1200)
             }
         }
 

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EDUVA — Dashboard Guru</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --border: #1e2d45;
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --text: #f0f4ff;
+      --muted: #64748b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+    body::before {
+      content: ''; position: fixed; top: -200px; left: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .navbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 16px 32px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-badge {
+      background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3);
+      color: var(--accent2); font-size: 11px; font-weight: 500;
+      padding: 4px 10px; border-radius: 99px; letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-user { font-size: 13px; color: var(--muted); }
+    .nav-user span { color: var(--text); font-weight: 500; }
+    .btn-logout {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; padding: 7px 14px; border-radius: 8px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+    .main { max-width: 1100px; margin: 0 auto; padding: 36px 24px; position: relative; z-index: 1; }
+
+    .page-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    .page-sub { color: var(--muted); font-size: 15px; margin-bottom: 32px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stats */
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; margin-bottom: 28px;
+      animation: fadeUp 0.4s ease both;
+    }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .stat-value { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .stat-sub { font-size: 13px; color: var(--muted); }
+    .v-blue  { color: var(--accent2); }
+    .v-green { color: var(--success); }
+    .v-amber { color: var(--warning); }
+    .v-pink  { color: #e879f9; }
+
+    /* Grid */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; animation: fadeUp 0.4s ease 0.1s both; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; }
+    .card-title {
+      font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+      margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title-left { display: flex; align-items: center; gap: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+
+    /* Chart */
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* Filter bar */
+    .filter-bar {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .filter-bar select, .filter-bar input {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; padding: 8px 12px; border-radius: 8px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent); }
+    .filter-bar select option { background: var(--surface); }
+    .btn-export {
+      margin-left: auto; background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+      padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-export:hover { opacity: 0.9; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th {
+      text-align: left; padding: 10px 14px;
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:hover { background: rgba(59,130,246,0.04); }
+    tbody td { padding: 12px 14px; }
+    .td-nama { font-weight: 500; }
+    .td-badge {
+      display: inline-block; font-size: 11px; padding: 3px 10px;
+      border-radius: 99px; font-weight: 500;
+    }
+    .badge-tkj  { background: rgba(59,130,246,0.15); color: var(--accent2); }
+    .badge-rpl  { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-mm   { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge-lain { background: rgba(100,116,139,0.15); color: var(--muted); }
+
+    .skor-pill {
+      display: inline-block; font-family: 'Syne', sans-serif;
+      font-size: 14px; font-weight: 700; min-width: 40px; text-align: center;
+    }
+    .skor-high { color: var(--success); }
+    .skor-mid  { color: var(--warning); }
+    .skor-low  { color: var(--error); }
+
+    /* Skill bar mini */
+    .mini-bar-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
+    .mini-bar-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .mini-bar-label { width: 50px; color: var(--muted); }
+    .mini-bar { flex: 1; height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .mini-fill { height: 100%; border-radius: 99px; }
+    .fill-blue  { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .fill-green { background: var(--success); }
+    .fill-amber { background: var(--warning); }
+
+    /* Empty & loading */
+    .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+    #loading { text-align: center; padding: 100px 0; color: var(--muted); }
+    #content { display: none; }
+
+    @media (max-width: 768px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .grid2  { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <img src="logo.svg" alt="EDUVA" style="height:32px"/>
+    <div class="nav-badge">Dashboard Guru</div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">Halo, <span id="nav-nama">...</span></div>
+    <button class="btn-logout" onclick="logout()">Keluar</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div id="loading">Memuat data...</div>
+
+  <div id="content">
+    <div class="page-title">Monitor Siswa</div>
+    <div class="page-sub" id="page-sub">Analisis perkembangan kompetensi seluruh siswa</div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Siswa</div>
+        <div class="stat-value v-blue" id="stat-siswa">0</div>
+        <div class="stat-sub">terdaftar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sudah Assessment</div>
+        <div class="stat-value v-green" id="stat-sudah">0</div>
+        <div class="stat-sub">siswa</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Rata-rata Skor</div>
+        <div class="stat-value v-amber" id="stat-avg">—</div>
+        <div class="stat-sub">dari 100 poin</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Perlu Perhatian</div>
+        <div class="stat-value v-pink" id="stat-perlu">0</div>
+        <div class="stat-sub">skor di bawah 60</div>
+      </div>
+    </div>
+
+    <!-- Chart + Skill breakdown -->
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-left"><div class="dot"></div>Distribusi Skor</div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartSkor"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-left"><div class="dot"></div>Rata-rata per Kategori</div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartKat"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Tabel siswa -->
+    <div class="card" style="animation: fadeUp 0.4s ease 0.2s both;">
+      <div class="card-title">
+        <div class="card-title-left"><div class="dot"></div>Daftar Siswa</div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="search" placeholder="Cari nama siswa..." oninput="filterTable()" style="width:200px"/>
+        <select id="filter-kelas" onchange="filterTable()">
+          <option value="">Semua Kelas</option>
+          <option value="X">Kelas X</option>
+          <option value="XI">Kelas XI</option>
+          <option value="XII">Kelas XII</option>
+        </select>
+        <select id="filter-jurusan" onchange="filterTable()">
+          <option value="">Semua Jurusan</option>
+          <option value="TKJ">TKJ</option>
+          <option value="RPL">RPL</option>
+          <option value="MM">Multimedia</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+        <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Jurusan</th>
+              <th>Kelas</th>
+              <th>Skor Terakhir</th>
+              <th>Total Assessment</th>
+              <th>Skill Breakdown</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="6" class="empty">Memuat data siswa...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://gcathmmlblokgdikxncj.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_bZh2Iw1WKBjwkdsUjt31Bg_MF5anpOP'
+  const { createClient } = supabase
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+  let allSiswa = []
+  let chartSkor, chartKat
+
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return }
+
+    const user = session.user
+
+    // Cek apakah guru
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle()
+    if (!profile || profile.role !== 'guru') {
+      window.location.href = 'dashboard.html'
+      return
+    }
+
+    document.getElementById('nav-nama').textContent = profile.nama?.split(' ')[0] || 'Guru'
+
+    // Ambil semua siswa (role = siswa)
+    const { data: siswaList } = await sb.from('profiles')
+      .select('*')
+      .eq('role', 'siswa')
+
+    // Ambil semua assessment
+    const { data: assessments } = await sb.from('assessment')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    // Gabungkan data
+    allSiswa = (siswaList || []).map(s => {
+      const asm = (assessments || []).filter(a => a.user_id === s.id)
+      const skorTerakhir = asm.length > 0 ? asm[0].skor : null
+      const avgSkor = asm.length > 0 ? Math.round(asm.reduce((a,b) => a+b.skor, 0) / asm.length) : null
+
+      // Skill per kategori
+      const byKat = {}
+      asm.forEach(a => {
+        if (!byKat[a.kategori]) byKat[a.kategori] = []
+        byKat[a.kategori].push(a.skor)
+      })
+      const skills = {}
+      Object.keys(byKat).forEach(k => {
+        skills[k] = Math.round(byKat[k].reduce((a,b)=>a+b,0)/byKat[k].length)
+      })
+
+      return { ...s, skorTerakhir, avgSkor, totalAsm: asm.length, skills }
+    })
+
+    // Stats
+    const sudahAsm = allSiswa.filter(s => s.totalAsm > 0)
+    const avgAll = sudahAsm.length > 0
+      ? Math.round(sudahAsm.reduce((a,b) => a + (b.avgSkor||0), 0) / sudahAsm.length)
+      : 0
+    const perluPerhatian = sudahAsm.filter(s => (s.avgSkor||0) < 60).length
+
+    document.getElementById('stat-siswa').textContent = allSiswa.length
+    document.getElementById('stat-sudah').textContent = sudahAsm.length
+    document.getElementById('stat-avg').textContent = avgAll || '—'
+    document.getElementById('stat-perlu').textContent = perluPerhatian
+
+    renderTable(allSiswa)
+    renderCharts(allSiswa, assessments || [])
+
+    document.getElementById('loading').style.display = 'none'
+    document.getElementById('content').style.display = 'block'
+  }
+
+  function getBadgeClass(jurusan) {
+    if (!jurusan) return 'badge-lain'
+    const j = jurusan.toUpperCase()
+    if (j === 'TKJ') return 'badge-tkj'
+    if (j === 'RPL') return 'badge-rpl'
+    if (j === 'MM' || j === 'MULTIMEDIA') return 'badge-mm'
+    return 'badge-lain'
+  }
+
+  function getSkorClass(skor) {
+    if (skor === null) return ''
+    if (skor >= 80) return 'skor-high'
+    if (skor >= 60) return 'skor-mid'
+    return 'skor-low'
+  }
+
+  function renderTable(data) {
+    const tbody = document.getElementById('table-body')
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">Tidak ada data siswa.</td></tr>'
+      return
+    }
+
+    tbody.innerHTML = data.map(s => {
+      const skor = s.skorTerakhir !== null ? `<span class="skor-pill ${getSkorClass(s.skorTerakhir)}">${s.skorTerakhir}</span>` : '<span style="color:var(--muted)">—</span>'
+      const total = s.totalAsm > 0 ? s.totalAsm + 'x' : '<span style="color:var(--muted)">Belum</span>'
+
+      const skillBar = ['Jaringan','Coding','Desain'].map(kat => {
+        const val = s.skills[kat] || 0
+        const cls = kat === 'Jaringan' ? 'fill-blue' : kat === 'Coding' ? 'fill-green' : 'fill-amber'
+        return `<div class="mini-bar-row">
+          <div class="mini-bar-label">${kat}</div>
+          <div class="mini-bar"><div class="mini-fill ${cls}" style="width:${val}%"></div></div>
+          <span style="font-size:11px;color:var(--muted);min-width:28px">${val > 0 ? val+'%' : '—'}</span>
+        </div>`
+      }).join('')
+
+      return `<tr>
+        <td class="td-nama">${s.nama || '—'}</td>
+        <td><span class="td-badge ${getBadgeClass(s.jurusan)}">${s.jurusan || '—'}</span></td>
+        <td>${s.kelas ? 'Kelas '+s.kelas : '—'}</td>
+        <td>${skor}</td>
+        <td>${total}</td>
+        <td><div class="mini-bar-wrap">${skillBar}</div></td>
+      </tr>`
+    }).join('')
+  }
+
+  function filterTable() {
+    const search = document.getElementById('search').value.toLowerCase()
+    const kelas = document.getElementById('filter-kelas').value
+    const jurusan = document.getElementById('filter-jurusan').value
+
+    const filtered = allSiswa.filter(s => {
+      const matchNama = !search || (s.nama||'').toLowerCase().includes(search)
+      const matchKelas = !kelas || s.kelas === kelas
+      const matchJurusan = !jurusan || s.jurusan === jurusan
+      return matchNama && matchKelas && matchJurusan
+    })
+    renderTable(filtered)
+  }
+
+  function renderCharts(siswa, assessments) {
+    // Chart distribusi skor
+    const ranges = { '0-40': 0, '41-60': 0, '61-80': 0, '81-100': 0 }
+    assessments.forEach(a => {
+      if (a.skor <= 40) ranges['0-40']++
+      else if (a.skor <= 60) ranges['41-60']++
+      else if (a.skor <= 80) ranges['61-80']++
+      else ranges['81-100']++
+    })
+
+    const ctx1 = document.getElementById('chartSkor').getContext('2d')
+    chartSkor = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(ranges),
+        datasets: [{
+          label: 'Jumlah Assessment',
+          data: Object.values(ranges),
+          backgroundColor: ['#ef4444aa','#f59e0baa','#3b82f6aa','#10b981aa'],
+          borderRadius: 8,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#1e2d45' }, ticks: { color: '#64748b' } },
+          y: { grid: { color: '#1e2d45' }, ticks: { color: '#64748b', stepSize: 1 } }
+        }
+      }
+    })
+
+    // Chart rata-rata per kategori
+    const katData = { Jaringan: [], Coding: [], Desain: [] }
+    assessments.forEach(a => {
+      if (katData[a.kategori]) katData[a.kategori].push(a.skor)
+    })
+    const katAvg = Object.keys(katData).map(k =>
+      katData[k].length > 0 ? Math.round(katData[k].reduce((a,b)=>a+b,0)/katData[k].length) : 0
+    )
+
+    const ctx2 = document.getElementById('chartKat').getContext('2d')
+    chartKat = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Jaringan', 'Coding', 'Desain'],
+        datasets: [{
+          data: katAvg,
+          backgroundColor: ['#3b82f6cc','#10b981cc','#f59e0bcc'],
+          borderWidth: 0,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#64748b', padding: 16, font: { size: 12 } } }
+        }
+      }
+    })
+  }
+
+  function exportCSV() {
+    const headers = ['Nama','Jurusan','Kelas','Skor Terakhir','Total Assessment','Jaringan','Coding','Desain']
+    const rows = allSiswa.map(s => [
+      s.nama || '',
+      s.jurusan || '',
+      s.kelas || '',
+      s.skorTerakhir ?? '',
+      s.totalAsm,
+      s.skills['Jaringan'] || '',
+      s.skills['Coding'] || '',
+      s.skills['Desain'] || ''
+    ])
+
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'data-siswa-eduva.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function logout() {
+    await sb.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
