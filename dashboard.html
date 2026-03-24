@@ -1,15 +1,24 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EDUVA — Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --bg: #0a0e1a;
@@ -34,9 +43,11 @@
     body::before {
       content: '';
       position: fixed;
-      top: -200px; left: -200px;
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
+      top: -200px;
+      left: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -52,6 +63,7 @@
       top: 0;
       z-index: 100;
     }
+
     .logo {
       font-family: 'Syne', sans-serif;
       font-weight: 800;
@@ -61,19 +73,23 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+
     .nav-right {
       display: flex;
       align-items: center;
       gap: 16px;
     }
+
     .nav-user {
       font-size: 13px;
       color: var(--muted);
     }
+
     .nav-user span {
       color: var(--text);
       font-weight: 500;
     }
+
     .btn-logout {
       background: transparent;
       border: 1px solid var(--border);
@@ -85,7 +101,11 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+    .btn-logout:hover {
+      border-color: var(--error);
+      color: var(--error);
+    }
 
     /* Main layout */
     .main {
@@ -101,13 +121,19 @@
       margin-bottom: 32px;
       animation: fadeUp 0.4s ease both;
     }
+
     .welcome h1 {
       font-family: 'Syne', sans-serif;
       font-size: 28px;
       font-weight: 800;
       margin-bottom: 6px;
     }
-    .welcome p { color: var(--muted); font-size: 15px; }
+
+    .welcome p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
     .welcome h1 span {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       -webkit-background-clip: text;
@@ -116,8 +142,15 @@
     }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* Stats row */
@@ -128,12 +161,14 @@
       margin-bottom: 24px;
       animation: fadeUp 0.4s ease 0.1s both;
     }
+
     .stat-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 22px 24px;
     }
+
     .stat-label {
       font-size: 12px;
       color: var(--muted);
@@ -141,6 +176,7 @@
       letter-spacing: 0.8px;
       margin-bottom: 8px;
     }
+
     .stat-value {
       font-family: 'Syne', sans-serif;
       font-size: 32px;
@@ -148,10 +184,23 @@
       line-height: 1;
       margin-bottom: 4px;
     }
-    .stat-sub { font-size: 13px; color: var(--muted); }
-    .stat-value.blue  { color: var(--accent2); }
-    .stat-value.green { color: var(--success); }
-    .stat-value.amber { color: var(--warning); }
+
+    .stat-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .stat-value.blue {
+      color: var(--accent2);
+    }
+
+    .stat-value.green {
+      color: var(--success);
+    }
+
+    .stat-value.amber {
+      color: var(--warning);
+    }
 
     /* Grid 2 col */
     .grid2 {
@@ -161,12 +210,14 @@
       margin-bottom: 20px;
       animation: fadeUp 0.4s ease 0.2s both;
     }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 20px;
       padding: 24px;
     }
+
     .card-title {
       font-family: 'Syne', sans-serif;
       font-size: 15px;
@@ -176,40 +227,70 @@
       align-items: center;
       gap: 8px;
     }
+
     .card-title .dot {
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
     }
 
     /* Skill bars */
-    .skill-list { display: flex; flex-direction: column; gap: 14px; }
+    .skill-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
     .skill-item {}
+
     .skill-info {
       display: flex;
       justify-content: space-between;
       font-size: 13px;
       margin-bottom: 6px;
     }
-    .skill-name { font-weight: 500; }
-    .skill-pct  { color: var(--muted); }
+
+    .skill-name {
+      font-weight: 500;
+    }
+
+    .skill-pct {
+      color: var(--muted);
+    }
+
     .skill-bar {
       height: 6px;
       background: var(--border);
       border-radius: 99px;
       overflow: hidden;
     }
+
     .skill-fill {
       height: 100%;
       border-radius: 99px;
       transition: width 1s ease;
     }
-    .fill-blue  { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-    .fill-green { background: linear-gradient(90deg, #059669, var(--success)); }
-    .fill-amber { background: linear-gradient(90deg, #d97706, var(--warning)); }
+
+    .fill-blue {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .fill-green {
+      background: linear-gradient(90deg, #059669, var(--success));
+    }
+
+    .fill-amber {
+      background: linear-gradient(90deg, #d97706, var(--warning));
+    }
 
     /* History list */
-    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
     .history-item {
       display: flex;
       align-items: center;
@@ -220,9 +301,23 @@
       border-radius: 10px;
       font-size: 13px;
     }
-    .history-left { display: flex; flex-direction: column; gap: 3px; }
-    .history-kat  { font-weight: 500; font-size: 14px; }
-    .history-date { color: var(--muted); font-size: 12px; }
+
+    .history-left {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .history-kat {
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .history-date {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
     .history-skor {
       font-family: 'Syne', sans-serif;
       font-weight: 700;
@@ -231,8 +326,8 @@
 
     /* CTA */
     .cta-card {
-      background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(6,182,212,0.1));
-      border: 1px solid rgba(59,130,246,0.3);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(6, 182, 212, 0.1));
+      border: 1px solid rgba(59, 130, 246, 0.3);
       border-radius: 20px;
       padding: 28px 32px;
       display: flex;
@@ -240,13 +335,19 @@
       justify-content: space-between;
       animation: fadeUp 0.4s ease 0.3s both;
     }
+
     .cta-text h2 {
       font-family: 'Syne', sans-serif;
       font-size: 18px;
       font-weight: 700;
       margin-bottom: 6px;
     }
-    .cta-text p { color: var(--muted); font-size: 14px; }
+
+    .cta-text p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
     .btn-assessment {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: #fff;
@@ -261,7 +362,10 @@
       transition: opacity 0.2s;
       flex-shrink: 0;
     }
-    .btn-assessment:hover { opacity: 0.9; }
+
+    .btn-assessment:hover {
+      opacity: 0.9;
+    }
 
     /* Profile info */
     .profile-grid {
@@ -269,7 +373,9 @@
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
+
     .profile-item {}
+
     .profile-lbl {
       font-size: 11px;
       color: var(--muted);
@@ -277,6 +383,7 @@
       letter-spacing: 0.8px;
       margin-bottom: 4px;
     }
+
     .profile-val {
       font-size: 15px;
       font-weight: 500;
@@ -296,198 +403,223 @@
       padding: 100px 0;
       color: var(--muted);
     }
-    #dashboard { display: none; }
+
+    #dashboard {
+      display: none;
+    }
 
     @media (max-width: 640px) {
-      .stats { grid-template-columns: 1fr; }
-      .grid2  { grid-template-columns: 1fr; }
-      .cta-card { flex-direction: column; gap: 16px; }
-      .navbar { padding: 14px 16px; }
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-card {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .navbar {
+        padding: 14px 16px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-<nav class="navbar">
-  <img src="logo.svg" alt="EDUVA" style="height:36px"/>
-  <div class="nav-right">
-    <div class="nav-user">Halo, <span id="nav-nama">...</span></div>
-    <button class="btn-logout" onclick="logout()">Keluar</button>
-  </div>
-</nav>
-
-<div class="main">
-  <div id="loading">Memuat dashboard...</div>
-
-  <div id="dashboard">
-    <!-- Welcome -->
-    <div class="welcome">
-      <h1>Selamat datang, <span id="welcome-nama">...</span>! 👋</h1>
-      <p>Pantau perkembangan skill kamu dan terus tingkatkan kompetensi.</p>
+  <nav class="navbar">
+    <img src="logo.svg" alt="EDUVA" style="height:36px" />
+    <div class="nav-right">
+      <div class="nav-user">Halo, <span id="nav-nama">...</span></div>
+      <button class="btn-logout" onclick="logout()">Keluar</button>
     </div>
+  </nav>
 
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-label">Skor Terakhir</div>
-        <div class="stat-value blue" id="stat-skor">—</div>
-        <div class="stat-sub">dari 100 poin</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Assessment</div>
-        <div class="stat-value green" id="stat-total">0</div>
-        <div class="stat-sub">kali mengerjakan</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Rata-rata Skor</div>
-        <div class="stat-value amber" id="stat-avg">—</div>
-        <div class="stat-sub">dari semua assessment</div>
-      </div>
-    </div>
+  <div class="main">
+    <div id="loading">Memuat dashboard...</div>
 
-    <!-- Grid 2 col -->
-    <div class="grid2">
-      <!-- Skill breakdown -->
-      <div class="card">
-        <div class="card-title"><div class="dot"></div>Skill Breakdown</div>
-        <div class="skill-list" id="skill-list">
-          <div class="empty">Belum ada data skill.</div>
+    <div id="dashboard">
+      <!-- Welcome -->
+      <div class="welcome">
+        <h1>Selamat datang, <span id="welcome-nama">...</span>! 👋</h1>
+        <p>Pantau perkembangan skill kamu dan terus tingkatkan kompetensi.</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Skor Terakhir</div>
+          <div class="stat-value blue" id="stat-skor">—</div>
+          <div class="stat-sub">dari 100 poin</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Assessment</div>
+          <div class="stat-value green" id="stat-total">0</div>
+          <div class="stat-sub">kali mengerjakan</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Rata-rata Skor</div>
+          <div class="stat-value amber" id="stat-avg">—</div>
+          <div class="stat-sub">dari semua assessment</div>
         </div>
       </div>
 
-      <!-- Profil -->
-      <div class="card">
-        <div class="card-title"><div class="dot"></div>Profil Saya</div>
-        <div class="profile-grid">
-          <div class="profile-item">
-            <div class="profile-lbl">Nama</div>
-            <div class="profile-val" id="p-nama">—</div>
+      <!-- Grid 2 col -->
+      <div class="grid2">
+        <!-- Skill breakdown -->
+        <div class="card">
+          <div class="card-title">
+            <div class="dot"></div>Skill Breakdown
           </div>
-          <div class="profile-item">
-            <div class="profile-lbl">Jurusan</div>
-            <div class="profile-val" id="p-jurusan">—</div>
+          <div class="skill-list" id="skill-list">
+            <div class="empty">Belum ada data skill.</div>
           </div>
-          <div class="profile-item">
-            <div class="profile-lbl">Kelas</div>
-            <div class="profile-val" id="p-kelas">—</div>
+        </div>
+
+        <!-- Profil -->
+        <div class="card">
+          <div class="card-title">
+            <div class="dot"></div>Profil Saya
           </div>
-          <div class="profile-item">
-            <div class="profile-lbl">Email</div>
-            <div class="profile-val" id="p-email" style="font-size:13px">—</div>
+          <div class="profile-grid">
+            <div class="profile-item">
+              <div class="profile-lbl">Nama</div>
+              <div class="profile-val" id="p-nama">—</div>
+            </div>
+            <div class="profile-item">
+              <div class="profile-lbl">Jurusan</div>
+              <div class="profile-val" id="p-jurusan">—</div>
+            </div>
+            <div class="profile-item">
+              <div class="profile-lbl">Kelas</div>
+              <div class="profile-val" id="p-kelas">—</div>
+            </div>
+            <div class="profile-item">
+              <div class="profile-lbl">Email</div>
+              <div class="profile-val" id="p-email" style="font-size:13px">—</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Riwayat assessment -->
-    <div class="card" style="margin-bottom:20px; animation: fadeUp 0.4s ease 0.25s both;">
-      <div class="card-title"><div class="dot"></div>Riwayat Assessment</div>
-      <div class="history-list" id="history-list">
-        <div class="empty">Belum ada riwayat assessment.</div>
+      <!-- Riwayat assessment -->
+      <div class="card" style="margin-bottom:20px; animation: fadeUp 0.4s ease 0.25s both;">
+        <div class="card-title">
+          <div class="dot"></div>Riwayat Assessment
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="empty">Belum ada riwayat assessment.</div>
+        </div>
       </div>
-    </div>
 
-    <!-- CTA -->
-    <div class="cta-card">
-      <div class="cta-text">
-        <h2>Siap assessment lagi?</h2>
-        <p>Uji skill kamu dan lihat seberapa jauh perkembanganmu.</p>
+      <!-- CTA -->
+      <div class="cta-card">
+        <div class="cta-text">
+          <h2>Siap assessment lagi?</h2>
+          <p>Uji skill kamu dan lihat seberapa jauh perkembanganmu.</p>
+        </div>
+        <button class="btn-assessment" onclick="window.location.href='assessment.html'">
+          Mulai Assessment →
+        </button>
+        <button class="btn-assessment" onclick="window.location.href='roadmap.html'">
+          Roadmap Karier →
+        </button>
       </div>
-      <button class="btn-assessment" onclick="window.location.href='assessment.html'">
-        Mulai Assessment →
-      </button>
     </div>
   </div>
-</div>
 
-<script>
-  const SUPABASE_URL = 'https://gcathmmlblokgdikxncj.supabase.co'
-  const SUPABASE_KEY = 'sb_publishable_bZh2Iw1WKBjwkdsUjt31Bg_MF5anpOP'
-  const { createClient } = supabase
-  const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+  <script>
+    const SUPABASE_URL = 'https://gcathmmlblokgdikxncj.supabase.co'
+    const SUPABASE_KEY = 'sb_publishable_bZh2Iw1WKBjwkdsUjt31Bg_MF5anpOP'
+    const { createClient } = supabase
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-  const SKILL_COLORS = {
-    'Jaringan': { cls: 'fill-blue',  label: 'Jaringan' },
-    'Coding':   { cls: 'fill-green', label: 'Coding' },
-    'Desain':   { cls: 'fill-amber', label: 'Desain' },
-  }
+    const SKILL_COLORS = {
+      'Jaringan': { cls: 'fill-blue', label: 'Jaringan' },
+      'Coding': { cls: 'fill-green', label: 'Coding' },
+      'Desain': { cls: 'fill-amber', label: 'Desain' },
+    }
 
-  async function init() {
-    const { data: { session } } = await sb.auth.getSession()
-    if (!session) { window.location.href = 'login.html'; return }
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) { window.location.href = 'login.html'; return }
 
-    const user = session.user
+      const user = session.user
 
-    // Ambil profil
-    const { data: profile, error: profileError } = await sb.from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle()
+      // Ambil profil
+      const { data: profile, error: profileError } = await sb.from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle()
 
-    // Ambil semua assessment user ini
-    const { data: assessments } = await sb.from('assessment')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      // Ambil semua assessment user ini
+      const { data: assessments } = await sb.from('assessment')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
 
-    // Nama: ambil dari profil, fallback ke bagian depan email
-    const nama = profile?.nama || user.email.split('@')[0]
-    // Nickname: ambil kata pertama saja
-    const nickname = nama.split(' ')[0]
+      // Nama: ambil dari profil, fallback ke bagian depan email
+      const nama = profile?.nama || user.email.split('@')[0]
+      // Nickname: ambil kata pertama saja
+      const nickname = nama.split(' ')[0]
 
-    document.getElementById('nav-nama').textContent = nickname
-    document.getElementById('welcome-nama').textContent = nickname
+      document.getElementById('nav-nama').textContent = nickname
+      document.getElementById('welcome-nama').textContent = nickname
 
-    // Profil
-    document.getElementById('p-nama').textContent = profile?.nama || '—'
-    document.getElementById('p-jurusan').textContent = profile?.jurusan || '—'
-    document.getElementById('p-kelas').textContent = profile?.kelas ? `Kelas ${profile.kelas}` : '—'
-    document.getElementById('p-email').textContent = user.email
+      // Profil
+      document.getElementById('p-nama').textContent = profile?.nama || '—'
+      document.getElementById('p-jurusan').textContent = profile?.jurusan || '—'
+      document.getElementById('p-kelas').textContent = profile?.kelas ? `Kelas ${profile.kelas}` : '—'
+      document.getElementById('p-email').textContent = user.email
 
-    // Stats
-    if (assessments && assessments.length > 0) {
-      const skorTerakhir = assessments[0].skor
-      const avg = Math.round(assessments.reduce((a, b) => a + b.skor, 0) / assessments.length)
+      // Stats
+      if (assessments && assessments.length > 0) {
+        const skorTerakhir = assessments[0].skor
+        const avg = Math.round(assessments.reduce((a, b) => a + b.skor, 0) / assessments.length)
 
-      document.getElementById('stat-skor').textContent = skorTerakhir
-      document.getElementById('stat-total').textContent = assessments.length
-      document.getElementById('stat-avg').textContent = avg
+        document.getElementById('stat-skor').textContent = skorTerakhir
+        document.getElementById('stat-total').textContent = assessments.length
+        document.getElementById('stat-avg').textContent = avg
 
-      // Skill breakdown per kategori
-      const byKat = {}
-      assessments.forEach(a => {
-        if (!byKat[a.kategori]) byKat[a.kategori] = []
-        byKat[a.kategori].push(a.skor)
-      })
+        // Skill breakdown per kategori
+        const byKat = {}
+        assessments.forEach(a => {
+          if (!byKat[a.kategori]) byKat[a.kategori] = []
+          byKat[a.kategori].push(a.skor)
+        })
 
-      const skillList = document.getElementById('skill-list')
-      skillList.innerHTML = ''
-      const allKat = ['Jaringan', 'Coding', 'Desain']
-      allKat.forEach(kat => {
-        const scores = byKat[kat] || []
-        const avg = scores.length > 0 ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0
-        const color = SKILL_COLORS[kat]?.cls || 'fill-blue'
-        skillList.innerHTML += `
+        const skillList = document.getElementById('skill-list')
+        skillList.innerHTML = ''
+        const allKat = ['Jaringan', 'Coding', 'Desain']
+        allKat.forEach(kat => {
+          const scores = byKat[kat] || []
+          const avg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0
+          const color = SKILL_COLORS[kat]?.cls || 'fill-blue'
+          skillList.innerHTML += `
           <div class="skill-item">
             <div class="skill-info">
               <span class="skill-name">${kat}</span>
-              <span class="skill-pct">${avg > 0 ? avg+'%' : 'Belum diuji'}</span>
+              <span class="skill-pct">${avg > 0 ? avg + '%' : 'Belum diuji'}</span>
             </div>
             <div class="skill-bar">
               <div class="skill-fill ${color}" style="width:${avg}%"></div>
             </div>
           </div>`
-      })
-
-      // Riwayat
-      const historyList = document.getElementById('history-list')
-      historyList.innerHTML = ''
-      assessments.slice(0, 5).forEach(a => {
-        const date = new Date(a.created_at).toLocaleDateString('id-ID', {
-          day: 'numeric', month: 'short', year: 'numeric'
         })
-        const warna = a.skor >= 80 ? 'var(--success)' : a.skor >= 60 ? 'var(--warning)' : 'var(--error)'
-        historyList.innerHTML += `
+
+        // Riwayat
+        const historyList = document.getElementById('history-list')
+        historyList.innerHTML = ''
+        assessments.slice(0, 5).forEach(a => {
+          const date = new Date(a.created_at).toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'short', year: 'numeric'
+          })
+          const warna = a.skor >= 80 ? 'var(--success)' : a.skor >= 60 ? 'var(--warning)' : 'var(--error)'
+          historyList.innerHTML += `
           <div class="history-item">
             <div class="history-left">
               <div class="history-kat">${a.kategori}</div>
@@ -495,19 +627,20 @@
             </div>
             <div class="history-skor" style="color:${warna}">${a.skor}</div>
           </div>`
-      })
+        })
+      }
+
+      document.getElementById('loading').style.display = 'none'
+      document.getElementById('dashboard').style.display = 'block'
     }
 
-    document.getElementById('loading').style.display = 'none'
-    document.getElementById('dashboard').style.display = 'block'
-  }
+    async function logout() {
+      await sb.auth.signOut()
+      window.location.href = 'login.html'
+    }
 
-  async function logout() {
-    await sb.auth.signOut()
-    window.location.href = 'login.html'
-  }
-
-  init()
-</script>
+    init()
+  </script>
 </body>
+
 </html>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EDUVA — Roadmap Karier</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0e1a; --surface: #111827; --border: #1e2d45;
+      --accent: #3b82f6; --accent2: #06b6d4; --text: #f0f4ff;
+      --muted: #64748b; --success: #10b981; --warning: #f59e0b; --error: #ef4444;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+    body::before {
+      content: ''; position: fixed; top: -200px; left: -200px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .navbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 16px 32px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 100;
+    }
+    .nav-left { display: flex; align-items: center; gap: 16px; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .btn-back {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 7px 14px;
+      border-radius: 8px; cursor: pointer; transition: all 0.2s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-back:hover { border-color: var(--accent); color: var(--accent2); }
+    .btn-logout {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 7px 14px;
+      border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+    .main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Header */
+    .page-header { margin-bottom: 40px; animation: fadeUp 0.4s ease both; }
+    .page-tag { font-size: 12px; color: var(--accent2); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+    .page-title { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+    .page-sub { color: var(--muted); font-size: 15px; }
+
+    /* Jurusan filter */
+    .jurusan-filter {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px;
+      animation: fadeUp 0.4s ease 0.1s both;
+    }
+    .jurusan-btn {
+      padding: 8px 20px; border-radius: 99px; font-family: 'Syne', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      border: 1px solid var(--border); background: transparent; color: var(--muted);
+    }
+    .jurusan-btn:hover { border-color: var(--accent); color: var(--text); }
+    .jurusan-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-color: transparent; color: #fff;
+    }
+
+    /* Profesi grid */
+    .profesi-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+      margin-bottom: 48px; animation: fadeUp 0.4s ease 0.2s both;
+    }
+    .profesi-card {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 20px; padding: 24px; cursor: pointer;
+      transition: all 0.25s; position: relative; overflow: hidden;
+    }
+    .profesi-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(59,130,246,0.05), rgba(6,182,212,0.05));
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .profesi-card:hover { border-color: rgba(59,130,246,0.5); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(59,130,246,0.1); }
+    .profesi-card:hover::before { opacity: 1; }
+    .profesi-card.selected { border-color: var(--accent2); box-shadow: 0 0 30px rgba(6,182,212,0.15); }
+    .profesi-card.selected::before { opacity: 1; }
+    .profesi-card.hidden { display: none; }
+    .profesi-icon { font-size: 36px; margin-bottom: 14px; }
+    .profesi-name { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+    .profesi-jurusan { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .profesi-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .profesi-tag { font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 500; }
+    .tag-blue  { background: rgba(59,130,246,0.15); color: var(--accent2); }
+    .tag-green { background: rgba(16,185,129,0.15); color: var(--success); }
+    .tag-amber { background: rgba(245,158,11,0.15); color: var(--warning); }
+
+    /* Roadmap detail */
+    .roadmap-detail {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 24px; padding: 36px; display: none;
+      animation: fadeUp 0.4s ease both;
+    }
+    .roadmap-detail.open { display: block; }
+    .detail-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+    .detail-title-wrap {}
+    .detail-icon { font-size: 44px; margin-bottom: 10px; }
+    .detail-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    .detail-desc { color: var(--muted); font-size: 15px; max-width: 500px; line-height: 1.6; }
+    .detail-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+    .meta-item { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; text-align: center; }
+    .meta-val { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--accent2); }
+    .meta-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Timeline */
+    .timeline { position: relative; }
+    .timeline::before {
+      content: ''; position: absolute; left: 27px; top: 0; bottom: 0;
+      width: 2px; background: linear-gradient(180deg, var(--accent), var(--accent2), transparent);
+    }
+    .timeline-item {
+      display: flex; gap: 24px; margin-bottom: 32px;
+      opacity: 0; transform: translateX(-20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .timeline-item.visible { opacity: 1; transform: translateX(0); }
+    .timeline-dot {
+      width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800;
+      position: relative; z-index: 1;
+    }
+    .dot-blue  { background: rgba(59,130,246,0.2); color: var(--accent); border: 2px solid var(--accent); }
+    .dot-cyan  { background: rgba(6,182,212,0.2); color: var(--accent2); border: 2px solid var(--accent2); }
+    .dot-green { background: rgba(16,185,129,0.2); color: var(--success); border: 2px solid var(--success); }
+    .dot-amber { background: rgba(245,158,11,0.2); color: var(--warning); border: 2px solid var(--warning); }
+    .dot-pink  { background: rgba(232,121,249,0.2); color: #e879f9; border: 2px solid #e879f9; }
+    .timeline-content { flex: 1; padding-top: 8px; }
+    .timeline-phase { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+    .timeline-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .timeline-desc { font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 12px; }
+    .skill-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .skill-chip {
+      font-size: 12px; padding: 4px 12px; border-radius: 8px; font-weight: 500;
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    }
+
+    /* Salary & tools section */
+    .detail-extras { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 32px; }
+    .extras-card { background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+    .extras-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 14px; color: var(--accent2); }
+    .extras-list { display: flex; flex-direction: column; gap: 8px; }
+    .extras-item { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .extras-item::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+
+    @media (max-width: 768px) {
+      .profesi-grid { grid-template-columns: 1fr 1fr; }
+      .detail-extras { grid-template-columns: 1fr; }
+      .detail-header { flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .profesi-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-left">
+    <img src="logo.svg" alt="EDUVA" style="height:32px"/>
+  </div>
+  <div class="nav-right">
+    <a href="dashboard.html" class="btn-back">← Dashboard</a>
+    <button class="btn-logout" onclick="logout()">Keluar</button>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div class="page-tag">Roadmap Karier</div>
+    <h1 class="page-title">Pilih jalur kariermu di dunia IT</h1>
+    <p class="page-sub">Temukan langkah-langkah yang perlu kamu kuasai untuk mencapai profesi impianmu setelah lulus SMK.</p>
+  </div>
+
+  <!-- Filter jurusan -->
+  <div class="jurusan-filter">
+    <button class="jurusan-btn active" onclick="filterJurusan('semua', this)">Semua</button>
+    <button class="jurusan-btn" onclick="filterJurusan('TKJ', this)">TKJ</button>
+    <button class="jurusan-btn" onclick="filterJurusan('RPL', this)">RPL</button>
+    <button class="jurusan-btn" onclick="filterJurusan('MM', this)">Multimedia</button>
+  </div>
+
+  <!-- Profesi cards -->
+  <div class="profesi-grid" id="profesi-grid">
+
+    <div class="profesi-card" data-jurusan="RPL" onclick="showRoadmap('webdev')">
+      <div class="profesi-icon">💻</div>
+      <div class="profesi-name">Web Developer</div>
+      <div class="profesi-jurusan">RPL</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">HTML/CSS</span>
+        <span class="profesi-tag tag-green">JavaScript</span>
+        <span class="profesi-tag tag-amber">Framework</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="TKJ" onclick="showRoadmap('network')">
+      <div class="profesi-icon">🌐</div>
+      <div class="profesi-name">Network Engineer</div>
+      <div class="profesi-jurusan">TKJ</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">Cisco</span>
+        <span class="profesi-tag tag-green">Routing</span>
+        <span class="profesi-tag tag-amber">Security</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="MM" onclick="showRoadmap('uiux')">
+      <div class="profesi-icon">🎨</div>
+      <div class="profesi-name">UI/UX Designer</div>
+      <div class="profesi-jurusan">Multimedia</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">Figma</span>
+        <span class="profesi-tag tag-green">Prototyping</span>
+        <span class="profesi-tag tag-amber">Research</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="TKJ" onclick="showRoadmap('itsupport')">
+      <div class="profesi-icon">🛠️</div>
+      <div class="profesi-name">IT Support</div>
+      <div class="profesi-jurusan">TKJ</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">Hardware</span>
+        <span class="profesi-tag tag-green">Troubleshoot</span>
+        <span class="profesi-tag tag-amber">OS</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="RPL" onclick="showRoadmap('dataanalyst')">
+      <div class="profesi-icon">📊</div>
+      <div class="profesi-name">Data Analyst</div>
+      <div class="profesi-jurusan">RPL</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">Python</span>
+        <span class="profesi-tag tag-green">SQL</span>
+        <span class="profesi-tag tag-amber">Visualisasi</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="MM" onclick="showRoadmap('contentcreator')">
+      <div class="profesi-icon">🎬</div>
+      <div class="profesi-name">Content Creator / Editor</div>
+      <div class="profesi-jurusan">Multimedia</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">Editing</span>
+        <span class="profesi-tag tag-green">Motion</span>
+        <span class="profesi-tag tag-amber">Storytelling</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="RPL" onclick="showRoadmap('backend')">
+      <div class="profesi-icon">⚙️</div>
+      <div class="profesi-name">Backend Developer</div>
+      <div class="profesi-jurusan">RPL</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">API</span>
+        <span class="profesi-tag tag-green">Database</span>
+        <span class="profesi-tag tag-amber">Server</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="TKJ" onclick="showRoadmap('sysadmin')">
+      <div class="profesi-icon">🖥️</div>
+      <div class="profesi-name">System Administrator</div>
+      <div class="profesi-jurusan">TKJ</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">Linux</span>
+        <span class="profesi-tag tag-green">Server</span>
+        <span class="profesi-tag tag-amber">Cloud</span>
+      </div>
+    </div>
+
+    <div class="profesi-card" data-jurusan="MM" onclick="showRoadmap('graphicdesign')">
+      <div class="profesi-icon">✏️</div>
+      <div class="profesi-name">Graphic Designer</div>
+      <div class="profesi-jurusan">Multimedia</div>
+      <div class="profesi-tags">
+        <span class="profesi-tag tag-blue">Illustrator</span>
+        <span class="profesi-tag tag-green">Branding</span>
+        <span class="profesi-tag tag-amber">Typography</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Roadmap detail -->
+  <div class="roadmap-detail" id="roadmap-detail"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://gcathmmlblokgdikxncj.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_bZh2Iw1WKBjwkdsUjt31Bg_MF5anpOP'
+  const { createClient } = supabase
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) { window.location.href = 'login.html'; return }
+  }
+
+  function filterJurusan(jurusan, btn) {
+    document.querySelectorAll('.jurusan-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    document.querySelectorAll('.profesi-card').forEach(card => {
+      if (jurusan === 'semua' || card.dataset.jurusan === jurusan) {
+        card.classList.remove('hidden')
+      } else {
+        card.classList.add('hidden')
+      }
+    })
+    document.getElementById('roadmap-detail').classList.remove('open')
+  }
+
+  const ROADMAPS = {
+    webdev: {
+      icon: '💻', title: 'Web Developer',
+      desc: 'Web Developer membangun tampilan dan fungsi website. Mulai dari HTML dasar hingga framework modern seperti React atau Vue.',
+      durasi: '12-18 bln', gaji: '4-15 jt/bln', level: 'Beginner → Mid',
+      steps: [
+        { phase: 'Fondasi', title: 'Dasar HTML & CSS', desc: 'Pelajari struktur halaman web dengan HTML dan styling dengan CSS. Ini adalah fondasi utama yang wajib dikuasai sebelum melangkah lebih jauh.', skills: ['HTML5', 'CSS3', 'Flexbox', 'Grid', 'Responsive Design'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Interaktivitas', title: 'JavaScript Dasar', desc: 'Tambahkan logika dan interaktivitas ke website. Pelajari variabel, fungsi, DOM manipulation, dan event handling.', skills: ['ES6+', 'DOM Manipulation', 'Fetch API', 'JSON', 'Local Storage'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'Framework', title: 'Pilih Framework Frontend', desc: 'Kuasai salah satu framework populer untuk membangun aplikasi web yang lebih kompleks dan efisien.', skills: ['React / Vue', 'Component', 'State Management', 'Routing', 'NPM'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'Backend Dasar', title: 'Kenali Backend & Database', desc: 'Pahami cara kerja server dan database. Bisa pakai layanan seperti Supabase atau Firebase untuk memulai.', skills: ['Node.js / Express', 'REST API', 'SQL Dasar', 'Supabase / Firebase', 'Authentication'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Portfolio', title: 'Bangun Portfolio & Deploy', desc: 'Buat minimal 3 project nyata dan deploy ke internet. Portfolio adalah kunci untuk dapat kerja atau freelance.', skills: ['Git & GitHub', 'Vercel / Netlify', 'Project Nyata', 'README', 'LinkedIn'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['VS Code', 'GitHub', 'Figma', 'Chrome DevTools', 'Postman'],
+      sertifikasi: ['freeCodeCamp Web Dev', 'Meta Frontend Developer', 'Google UX Design']
+    },
+    network: {
+      icon: '🌐', title: 'Network Engineer',
+      desc: 'Network Engineer merancang, membangun, dan memelihara infrastruktur jaringan komputer di perusahaan atau ISP.',
+      durasi: '12-24 bln', gaji: '5-20 jt/bln', level: 'Beginner → Senior',
+      steps: [
+        { phase: 'Fondasi', title: 'Dasar Jaringan Komputer', desc: 'Pahami konsep dasar jaringan seperti OSI model, TCP/IP, IP addressing, dan cara kerja internet.', skills: ['OSI Model', 'TCP/IP', 'IP Address', 'Subnetting', 'DNS & DHCP'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Perangkat', title: 'Konfigurasi Router & Switch', desc: 'Pelajari cara konfigurasi perangkat jaringan Cisco menggunakan CLI. Gunakan Cisco Packet Tracer untuk simulasi.', skills: ['Cisco IOS', 'Router Config', 'Switch Config', 'VLAN', 'STP'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'Routing', title: 'Protokol Routing', desc: 'Kuasai protokol routing dinamis yang digunakan di jaringan enterprise dan ISP besar.', skills: ['Static Routing', 'RIP', 'OSPF', 'EIGRP', 'BGP Dasar'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'Keamanan', title: 'Network Security', desc: 'Pelajari cara mengamankan jaringan dari ancaman siber dengan firewall, VPN, dan monitoring.', skills: ['Firewall', 'ACL', 'VPN', 'IDS/IPS', 'Network Monitoring'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Sertifikasi', title: 'Raih Sertifikasi CCNA', desc: 'Sertifikasi Cisco CCNA adalah standar industri untuk Network Engineer. Ini kunci masuk ke dunia kerja.', skills: ['CCNA Exam Prep', 'Lab Practice', 'Troubleshooting', 'Documentation'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['Cisco Packet Tracer', 'GNS3', 'Wireshark', 'PuTTY', 'SolarWinds'],
+      sertifikasi: ['Cisco CCNA', 'CompTIA Network+', 'MikroTik MTCNA']
+    },
+    uiux: {
+      icon: '🎨', title: 'UI/UX Designer',
+      desc: 'UI/UX Designer menciptakan pengalaman pengguna yang intuitif dan tampilan visual yang menarik untuk produk digital.',
+      durasi: '8-14 bln', gaji: '4-18 jt/bln', level: 'Beginner → Mid',
+      steps: [
+        { phase: 'Fondasi', title: 'Prinsip Desain Visual', desc: 'Kuasai dasar-dasar desain visual: warna, tipografi, layout, komposisi, dan prinsip gestalt yang menjadi fondasi desainer.', skills: ['Color Theory', 'Typography', 'Layout', 'Gestalt Principles', 'Grid System'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Tools', title: 'Kuasai Figma', desc: 'Figma adalah tool desain standar industri. Pelajari dari membuat komponen hingga prototyping interaktif.', skills: ['Figma Basic', 'Auto Layout', 'Components', 'Prototyping', 'Variables'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'UX Research', title: 'User Research & Wireframe', desc: 'Pahami kebutuhan pengguna melalui riset, buat user persona, user journey, dan wireframe sebelum desain final.', skills: ['User Interview', 'User Persona', 'User Journey', 'Wireframing', 'Information Architecture'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'UI Design', title: 'Desain UI & Design System', desc: 'Buat tampilan visual yang konsisten dengan design system. Pelajari cara membuat komponen yang reusable.', skills: ['UI Design', 'Design System', 'Component Library', 'Accessibility', 'Dark Mode'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Portfolio', title: 'Bangun Case Study Portfolio', desc: 'Buat minimal 3 case study lengkap yang menunjukkan proses desainmu dari riset hingga solusi akhir.', skills: ['Case Study', 'Presentation', 'Behance / Dribbble', 'Handoff ke Developer'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['Figma', 'Adobe XD', 'Maze', 'Notion', 'Miro'],
+      sertifikasi: ['Google UX Design Certificate', 'Interaction Design Foundation', 'Adobe Certified']
+    },
+    itsupport: {
+      icon: '🛠️', title: 'IT Support',
+      desc: 'IT Support bertanggung jawab memastikan semua perangkat dan sistem teknologi di organisasi berjalan dengan baik.',
+      durasi: '6-12 bln', gaji: '3-10 jt/bln', level: 'Entry Level → Senior',
+      steps: [
+        { phase: 'Fondasi', title: 'Hardware & Komponen PC', desc: 'Pahami komponen hardware komputer, cara merakit, dan troubleshoot masalah hardware yang umum terjadi.', skills: ['Komponen PC', 'Merakit PC', 'Storage', 'RAM', 'Troubleshoot Hardware'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Sistem Operasi', title: 'Windows & Linux Administration', desc: 'Kuasai administrasi sistem operasi Windows dan dasar-dasar Linux yang sering dipakai di server perusahaan.', skills: ['Windows Admin', 'Active Directory', 'Linux Dasar', 'Command Line', 'Group Policy'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'Jaringan', title: 'Dasar Jaringan & Troubleshoot', desc: 'Pahami konsep jaringan dan cara troubleshoot masalah konektivitas yang sering dihadapi pengguna.', skills: ['TCP/IP Dasar', 'WiFi Setup', 'VPN', 'Remote Desktop', 'Network Troubleshoot'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'Keamanan', title: 'IT Security Dasar', desc: 'Pelajari praktik keamanan IT dasar untuk melindungi data dan sistem dari ancaman siber.', skills: ['Antivirus', 'Backup & Recovery', 'Password Policy', 'Phishing Awareness', 'Firewall Dasar'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Sertifikasi', title: 'CompTIA A+ & Pengalaman Kerja', desc: 'Raih sertifikasi CompTIA A+ sebagai bukti kompetensi dan mulai cari pengalaman kerja atau magang.', skills: ['CompTIA A+', 'Ticketing System', 'SLA', 'Customer Service', 'Dokumentasi'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['TeamViewer', 'AnyDesk', 'Windows Server', 'Jira Service', 'Lansweeper'],
+      sertifikasi: ['CompTIA A+', 'Microsoft MTA', 'ITIL Foundation']
+    },
+    dataanalyst: {
+      icon: '📊', title: 'Data Analyst',
+      desc: 'Data Analyst mengolah dan menganalisis data untuk menghasilkan insight yang membantu pengambilan keputusan bisnis.',
+      durasi: '12-18 bln', gaji: '6-20 jt/bln', level: 'Beginner → Mid',
+      steps: [
+        { phase: 'Fondasi', title: 'Excel & Statistik Dasar', desc: 'Mulai dengan Excel untuk analisis data dasar dan pelajari konsep statistik seperti mean, median, distribusi, dan korelasi.', skills: ['Excel Advanced', 'Pivot Table', 'Statistik Dasar', 'Probabilitas', 'Visualisasi Excel'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Database', title: 'SQL & Database', desc: 'SQL adalah skill wajib data analyst. Pelajari cara query, filter, join, dan agregasi data dari database.', skills: ['SQL SELECT', 'JOIN', 'GROUP BY', 'Subquery', 'Window Function'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'Programming', title: 'Python untuk Data', desc: 'Python adalah bahasa utama untuk analisis data. Kuasai library populer untuk manipulasi dan visualisasi data.', skills: ['Python Dasar', 'Pandas', 'NumPy', 'Matplotlib', 'Seaborn'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'Visualisasi', title: 'Dashboard & Storytelling', desc: 'Buat dashboard interaktif dan ceritakan data dengan visualisasi yang menarik menggunakan tools BI populer.', skills: ['Tableau / Power BI', 'Dashboard Design', 'Data Storytelling', 'KPI Metrics', 'Looker Studio'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Portfolio', title: 'Project & Sertifikasi', desc: 'Analisis dataset nyata dari Kaggle, buat laporan insight, dan raih sertifikasi untuk memperkuat profil.', skills: ['Kaggle', 'Project Analysis', 'GitHub Portfolio', 'Business Insight'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['Excel', 'Python', 'Tableau', 'Power BI', 'Google Looker Studio'],
+      sertifikasi: ['Google Data Analytics', 'IBM Data Analyst', 'Microsoft Power BI']
+    },
+    contentcreator: {
+      icon: '🎬', title: 'Content Creator / Video Editor',
+      desc: 'Content Creator membuat konten digital yang menarik mulai dari video, animasi, hingga konten media sosial.',
+      durasi: '6-12 bln', gaji: '3-20 jt/bln', level: 'Entry → Professional',
+      steps: [
+        { phase: 'Fondasi', title: 'Dasar Videografi & Sinematografi', desc: 'Pelajari teknik pengambilan gambar, komposisi, pencahayaan, dan penggunaan kamera untuk menghasilkan footage berkualitas.', skills: ['Komposisi Shot', 'Pencahayaan', 'Kamera Setting', 'B-Roll', 'Audio Dasar'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Editing', title: 'Video Editing', desc: 'Kuasai software editing video profesional untuk menyunting footage menjadi konten yang menarik dan engaging.', skills: ['Premiere Pro / DaVinci', 'Cut & Trim', 'Color Grading', 'Audio Mixing', 'Export Setting'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'Motion', title: 'Motion Graphics & After Effects', desc: 'Tambahkan animasi teks, transisi kreatif, dan elemen motion graphics untuk membuat konten lebih profesional.', skills: ['After Effects', 'Motion Typography', 'Transisi', 'Lower Third', 'Green Screen'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'Strategi', title: 'Content Strategy & Platform', desc: 'Pahami algoritma platform, strategi konten, dan cara membangun audiens di YouTube, TikTok, atau Instagram.', skills: ['YouTube SEO', 'Thumbnail Design', 'Hook Writing', 'Analytics', 'Monetisasi'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Portofolio', title: 'Bangun Portfolio & Personal Brand', desc: 'Kumpulkan hasil kerja terbaikmu, bangun personal brand, dan mulai tawarkan jasa editing atau produksi konten.', skills: ['Portfolio Channel', 'Freelance', 'Client Management', 'Pricing', 'Branding'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['Premiere Pro', 'After Effects', 'DaVinci Resolve', 'Canva', 'CapCut'],
+      sertifikasi: ['Adobe Certified', 'YouTube Creator Academy', 'Meta Content Creator']
+    },
+    backend: {
+      icon: '⚙️', title: 'Backend Developer',
+      desc: 'Backend Developer membangun logika server, API, dan database yang menjadi tulang punggung aplikasi digital.',
+      durasi: '14-20 bln', gaji: '6-25 jt/bln', level: 'Beginner → Senior',
+      steps: [
+        { phase: 'Fondasi', title: 'Pemrograman Dasar', desc: 'Kuasai satu bahasa pemrograman backend. Python atau JavaScript (Node.js) adalah pilihan terbaik untuk pemula.', skills: ['Python / Node.js', 'OOP', 'Data Structures', 'Algorithm Dasar', 'Git'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Database', title: 'Database & SQL', desc: 'Pelajari cara menyimpan, mengambil, dan memanipulasi data dengan SQL dan pahami konsep relational database.', skills: ['SQL', 'PostgreSQL / MySQL', 'Database Design', 'Indexing', 'Query Optimization'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'API', title: 'Membangun REST API', desc: 'Pelajari cara membuat API yang clean, aman, dan terdokumentasi dengan baik menggunakan framework backend.', skills: ['REST API', 'Express / FastAPI', 'Authentication', 'JWT', 'API Documentation'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'DevOps', title: 'Deployment & Cloud Dasar', desc: 'Pelajari cara deploy aplikasi ke server cloud dan gunakan tools DevOps untuk otomatisasi proses deployment.', skills: ['Docker', 'CI/CD', 'AWS / GCP Dasar', 'Linux Server', 'Nginx'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Portfolio', title: 'Project Nyata & Kontribusi', desc: 'Bangun project backend nyata, kontribusi ke open source, dan dokumentasikan semua di GitHub.', skills: ['GitHub Portfolio', 'Open Source', 'Code Review', 'System Design Dasar'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['VS Code', 'Postman', 'Docker', 'GitHub', 'PostgreSQL'],
+      sertifikasi: ['AWS Cloud Practitioner', 'freeCodeCamp Backend', 'Google Cloud Associate']
+    },
+    sysadmin: {
+      icon: '🖥️', title: 'System Administrator',
+      desc: 'SysAdmin mengelola infrastruktur server, sistem operasi, dan layanan IT yang digunakan seluruh organisasi.',
+      durasi: '12-24 bln', gaji: '6-22 jt/bln', level: 'Beginner → Senior',
+      steps: [
+        { phase: 'Fondasi', title: 'Linux Administration', desc: 'Linux adalah OS utama untuk server. Kuasai command line, manajemen file, user, dan proses di Linux.', skills: ['Linux CLI', 'File System', 'User Management', 'Process Management', 'Shell Script'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Server', title: 'Web Server & Services', desc: 'Pelajari cara setup dan konfigurasi web server, mail server, dan layanan-layanan penting lainnya.', skills: ['Apache / Nginx', 'DNS Server', 'Mail Server', 'FTP', 'SSH'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'Virtualisasi', title: 'Virtualisasi & Container', desc: 'Kuasai teknologi virtualisasi modern yang digunakan di hampir semua infrastruktur enterprise saat ini.', skills: ['VMware / VirtualBox', 'Docker', 'Kubernetes Dasar', 'Proxmox', 'KVM'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'Cloud', title: 'Cloud Computing', desc: 'Pelajari platform cloud populer untuk mengelola infrastruktur yang scalable dan reliable.', skills: ['AWS / Azure / GCP', 'Cloud Storage', 'Load Balancer', 'Auto Scaling', 'IAM'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Sertifikasi', title: 'Sertifikasi & Monitoring', desc: 'Raih sertifikasi cloud dan kuasai tools monitoring untuk memastikan sistem berjalan optimal.', skills: ['Prometheus / Grafana', 'ELK Stack', 'Backup Strategy', 'Disaster Recovery'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['Linux', 'Docker', 'Ansible', 'Nagios', 'Terraform'],
+      sertifikasi: ['Linux+ CompTIA', 'AWS Solutions Architect', 'Red Hat RHCSA']
+    },
+    graphicdesign: {
+      icon: '✏️', title: 'Graphic Designer',
+      desc: 'Graphic Designer menciptakan elemen visual seperti logo, brosur, poster, dan identitas brand yang kuat.',
+      durasi: '8-14 bln', gaji: '3-15 jt/bln', level: 'Beginner → Senior',
+      steps: [
+        { phase: 'Fondasi', title: 'Prinsip Desain Grafis', desc: 'Pelajari prinsip dasar desain: tipografi, warna, komposisi, keseimbangan, dan kontras yang menjadi fondasi semua desainer.', skills: ['Typography', 'Color Theory', 'Komposisi', 'Whitespace', 'Branding Dasar'], dot: 'dot-blue', color: '#3b82f6' },
+        { phase: 'Tools', title: 'Adobe Illustrator & Photoshop', desc: 'Kuasai dua software Adobe utama untuk desain grafis: Illustrator untuk vektor dan Photoshop untuk editing foto.', skills: ['Illustrator', 'Photoshop', 'Vector Art', 'Photo Editing', 'Layer Management'], dot: 'dot-cyan', color: '#06b6d4' },
+        { phase: 'Branding', title: 'Desain Logo & Brand Identity', desc: 'Pelajari cara membuat logo yang kuat dan sistem identitas brand yang konsisten dan memorable.', skills: ['Logo Design', 'Brand Guidelines', 'Color Palette', 'Icon Design', 'Mockup'], dot: 'dot-green', color: '#10b981' },
+        { phase: 'Print & Digital', title: 'Desain Print & Digital', desc: 'Kuasai berbagai format output — dari brosur, poster, banner hingga konten media sosial dan iklan digital.', skills: ['Layout Print', 'Social Media Design', 'Infografis', 'Banner Ads', 'Packaging'], dot: 'dot-amber', color: '#f59e0b' },
+        { phase: 'Portfolio', title: 'Portfolio & Freelance', desc: 'Kumpulkan 10+ project terbaikmu di Behance, mulai ambil project freelance, dan bangun reputasi online.', skills: ['Behance Portfolio', 'Freelance Platform', 'Client Brief', 'Revisi', 'Invoice'], dot: 'dot-pink', color: '#e879f9' },
+      ],
+      tools: ['Adobe Illustrator', 'Photoshop', 'InDesign', 'Canva', 'Figma'],
+      sertifikasi: ['Adobe Certified Professional', 'Canva Design Certification', 'Coursera Graphic Design']
+    }
+  }
+
+  function showRoadmap(id) {
+    document.querySelectorAll('.profesi-card').forEach(c => c.classList.remove('selected'))
+    event.currentTarget.classList.add('selected')
+
+    const r = ROADMAPS[id]
+    const detail = document.getElementById('roadmap-detail')
+
+    detail.innerHTML = `
+      <div class="detail-header">
+        <div class="detail-title-wrap">
+          <div class="detail-icon">${r.icon}</div>
+          <div class="detail-title">${r.title}</div>
+          <div class="detail-desc">${r.desc}</div>
+        </div>
+        <div class="detail-meta">
+          <div class="meta-item"><div class="meta-val">${r.durasi}</div><div class="meta-lbl">Estimasi Waktu</div></div>
+          <div class="meta-item"><div class="meta-val">${r.gaji}</div><div class="meta-lbl">Gaji Entry Level</div></div>
+          <div class="meta-item"><div class="meta-val">${r.level}</div><div class="meta-lbl">Level</div></div>
+        </div>
+      </div>
+
+      <h3 style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:24px;color:var(--accent2)">Tahapan Belajar</h3>
+
+      <div class="timeline">
+        ${r.steps.map((s, i) => `
+          <div class="timeline-item" style="transition-delay:${i*0.1}s">
+            <div class="timeline-dot ${s.dot}">${i+1}</div>
+            <div class="timeline-content">
+              <div class="timeline-phase" style="color:${s.color}">${s.phase}</div>
+              <div class="timeline-title">${s.title}</div>
+              <div class="timeline-desc">${s.desc}</div>
+              <div class="skill-chips">
+                ${s.skills.map(sk => `<span class="skill-chip">${sk}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="detail-extras">
+        <div class="extras-card">
+          <div class="extras-title">🛠 Tools yang Dibutuhkan</div>
+          <div class="extras-list">
+            ${r.tools.map(t => `<div class="extras-item">${t}</div>`).join('')}
+          </div>
+        </div>
+        <div class="extras-card">
+          <div class="extras-title">🏆 Sertifikasi Rekomendasi</div>
+          <div class="extras-list">
+            ${r.sertifikasi.map(s => `<div class="extras-item">${s}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    `
+
+    detail.classList.add('open')
+    detail.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+    setTimeout(() => {
+      detail.querySelectorAll('.timeline-item').forEach((el, i) => {
+        setTimeout(() => el.classList.add('visible'), i * 120)
+      })
+    }, 100)
+  }
+
+  async function logout() {
+    await sb.auth.signOut()
+    window.location.href = 'login.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
