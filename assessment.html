@@ -413,70 +413,6 @@
   const { createClient } = supabase
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-  // Bank soal (nanti bisa dipindah ke database Supabase)
-  const SOAL = [
-    {
-      kategori: 'Jaringan',
-      soal: 'Apa kepanjangan dari IP dalam jaringan komputer?',
-      opsi: ['Internet Protocol', 'Internal Process', 'Input Program', 'Interface Port'],
-      jawaban: 0
-    },
-    {
-      kategori: 'Jaringan',
-      soal: 'Perangkat yang berfungsi menghubungkan dua jaringan berbeda disebut?',
-      opsi: ['Switch', 'Hub', 'Router', 'Repeater'],
-      jawaban: 2
-    },
-    {
-      kategori: 'Coding',
-      soal: 'Di HTML, tag apa yang digunakan untuk membuat judul terbesar?',
-      opsi: ['<h6>', '<h1>', '<title>', '<header>'],
-      jawaban: 1
-    },
-    {
-      kategori: 'Coding',
-      soal: 'Apa fungsi dari CSS dalam pengembangan web?',
-      opsi: ['Mengatur logika program', 'Mengatur tampilan dan gaya halaman', 'Menyimpan data pengguna', 'Menghubungkan ke database'],
-      jawaban: 1
-    },
-    {
-      kategori: 'Coding',
-      soal: 'Tipe data mana yang digunakan untuk menyimpan nilai benar/salah di JavaScript?',
-      opsi: ['String', 'Integer', 'Boolean', 'Float'],
-      jawaban: 2
-    },
-    {
-      kategori: 'Desain',
-      soal: 'Singkatan UI dalam desain produk digital adalah?',
-      opsi: ['Unified Interface', 'User Interface', 'Universal Input', 'Usable Interaction'],
-      jawaban: 1
-    },
-    {
-      kategori: 'Desain',
-      soal: 'Warna yang berlawanan di color wheel disebut warna?',
-      opsi: ['Analogous', 'Triadic', 'Complementary', 'Monochromatic'],
-      jawaban: 2
-    },
-    {
-      kategori: 'Jaringan',
-      soal: 'Port default untuk protokol HTTP adalah?',
-      opsi: ['443', '21', '80', '22'],
-      jawaban: 2
-    },
-    {
-      kategori: 'Coding',
-      soal: 'Dalam pemrograman, fungsi yang memanggil dirinya sendiri disebut?',
-      opsi: ['Looping', 'Rekursif', 'Iterasi', 'Callback'],
-      jawaban: 1
-    },
-    {
-      kategori: 'Jaringan',
-      soal: 'DNS dalam jaringan berfungsi untuk?',
-      opsi: ['Mengamankan koneksi', 'Menerjemahkan nama domain ke IP address', 'Mempercepat internet', 'Memblokir virus'],
-      jawaban: 1
-    }
-  ]
-
   const REKOMENDASI = {
     'Jaringan': [
       'Pelajari materi CCNA dasar di Cisco NetAcad (gratis)',
@@ -495,6 +431,7 @@
     ]
   }
 
+  let SOAL = []
   let current = 0
   let jawaban = []
   let selectedOption = null
@@ -502,11 +439,27 @@
 
   async function init() {
     const { data: { session } } = await sb.auth.getSession()
-    if (!session) {
-      window.location.href = 'login.html'
+    if (!session) { window.location.href = 'login.html'; return }
+    user = session.user
+
+    // Ambil soal dari database, acak, ambil 10
+    const { data: soalData, error } = await sb.from('soal').select('*')
+    if (error || !soalData || soalData.length === 0) {
+      document.getElementById('loading').textContent = 'Gagal memuat soal. Coba refresh.'
       return
     }
-    user = session.user
+
+    // Acak soal dan ambil 10
+    SOAL = soalData
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 10)
+      .map(s => ({
+        kategori: s.kategori,
+        soal: s.pertanyaan,
+        opsi: [s.opsi_a, s.opsi_b, s.opsi_c, s.opsi_d],
+        jawaban: s.jawaban_benar
+      }))
+
     document.getElementById('loading').style.display = 'none'
     document.getElementById('assessment-screen').style.display = 'block'
     tampilkanSoal()
@@ -535,7 +488,6 @@
     selectedOption = null
     document.getElementById('btn-next').disabled = true
 
-    // Animasi ulang card
     const card = document.getElementById('question-card')
     card.style.animation = 'none'
     card.offsetHeight
@@ -551,7 +503,6 @@
 
   function nextQuestion() {
     jawaban.push(selectedOption)
-
     if (current < SOAL.length - 1) {
       current++
       tampilkanSoal()
@@ -584,7 +535,6 @@
     document.getElementById('res-salah').textContent = SOAL.length - benar
     document.getElementById('res-skor').textContent = skor
 
-    // Icon & judul berdasarkan skor
     if (skor >= 80) {
       document.getElementById('result-icon').textContent = '🏆'
       document.getElementById('result-title').textContent = 'Luar Biasa!'
@@ -599,7 +549,6 @@
       document.getElementById('result-sub').textContent = 'Banyak yang bisa dipelajari!'
     }
 
-    // Rekomendasi dari kategori yang banyak salah
     const rekList = document.getElementById('rekomendasi-list')
     rekList.innerHTML = ''
     const kategoriLemah = Object.keys(salahKategori).sort((a,b) => salahKategori[b]-salahKategori[a])
@@ -613,7 +562,6 @@
       })
     })
 
-    // Simpan ke Supabase
     const kategoriUtama = Object.keys(salahKategori).sort((a,b)=>salahKategori[b]-salahKategori[a])[0] || 'Umum'
     await sb.from('assessment').insert({
       user_id: user.id,
